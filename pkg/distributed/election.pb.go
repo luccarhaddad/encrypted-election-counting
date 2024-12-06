@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        v5.29.0
-// source: api/election.proto
+// source: api/distributed.proto
 
 package election
 

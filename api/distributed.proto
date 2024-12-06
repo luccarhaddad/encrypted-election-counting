@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package distributed;
+
+option go_package = "encrypted-election-counting/pkg/distributed";
+
+service Worker {
+  rpc SubmitVote (VoteRequest) returns (VoteResponse);
+  rpc SendAggregates (AggregateRequest) returns (AckResponse);
+}
+
+service Controller {
+  rpc ReceiveAggregates (AggregateRequest) returns (AckResponse);
+  rpc DecryptFinalResult (DecryptRequest) returns (ResultResponse);
+}
+
+message VoteRequest {
+  string candidate_id = 1;
+}
+
+message VoteResponse {
+  string status = 1;
+}
+
+message AggregateRequest {
+  map<string, bytes> encrypted_aggregates = 1;
+}
+
+message AckResponse {
+  string message = 1;
+}
+
+message DecryptRequest {}
+
+message ResultResponse {
+  map<string, int32> final_results = 1;
+}

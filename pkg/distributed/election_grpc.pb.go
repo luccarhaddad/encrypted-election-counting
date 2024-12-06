@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.0
-// source: api/election.proto
+// source: api/distributed.proto
 
 package election
 
@@ -155,5 +155,5 @@ var Election_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/election.proto",
+	Metadata: "api/distributed.proto",
 }

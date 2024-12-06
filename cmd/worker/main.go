@@ -2,11 +2,26 @@ package main
 
 import (
 	"context"
-	pb "encrypted-election-counting/pkg/distributed" // Import your protobuf package
+	pb "encrypted-election-counting/pkg/distributed"
 	"google.golang.org/grpc"
 	"log"
 	"os"
+	"sync"
 )
+
+type VoteAggregator struct {
+	mu          sync.Mutex
+	aggregates  map[string][]byte
+	encryptFunc func(vote int) []byte
+}
+
+func (va *VoteAggregator) SubmitVote(ctx context.Context, req *pb.VoteRequest) (*pb.VoteResponse, error) {
+	va.mu.Lock()
+	defer va.mu.Unlock()
+
+	encryptedVote := va.encryptFunc(1)
+	candidate := req.Can
+}
 
 func main() {
 	// Get the controller address from the environment variable
