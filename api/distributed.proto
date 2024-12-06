@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package distributed;
 
-option go_package = "encrypted-election-counting/pkg/distributed";
+option go_package = "pkg/distributed";
 
 service Worker {
   rpc SubmitVote (VoteRequest) returns (VoteResponse);
