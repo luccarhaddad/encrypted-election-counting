@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package election;
+
+option go_package = "pkg/distributed;election";
+
+service Election {
+  rpc SubmitVote (VoteRequest) returns (VoteResponse);
+  rpc AggregateVotes (Empty) returns (Result);
+}
+
+message VoteRequest {
+  bytes encrypted_vote = 1;
+}
+
+message VoteResponse {
+  string status = 1;
+}
+
+message Empty {}
+
+message Result {
+  int32 decrypted_result = 1;
+}
