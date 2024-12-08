@@ -7,11 +7,23 @@ option go_package = "pkg/distributed";
 service Worker {
   rpc SubmitVote (VoteRequest) returns (VoteResponse);
   rpc SendAggregates (AggregateRequest) returns (AckResponse);
+  rpc ReceiveKeyShare (KeyShareRequest) returns (KeyShareResponse);
 }
 
 service Controller {
   rpc ReceiveAggregates (AggregateRequest) returns (AckResponse);
   rpc DecryptFinalResult (DecryptRequest) returns (ResultResponse);
+}
+
+message KeyShareRequest {
+  bytes key_share = 1;
+  int32 share_index = 2;
+  int32 total_shares = 3;
+  bytes public_key = 4;
+}
+
+message KeyShareResponse {
+  bool success = 1;
 }
 
 message VoteRequest {

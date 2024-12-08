@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	pb "encrypted-election-counting/pkg/distributed" // Import the generated protobuf package
+	"encrypted-election-counting/pkg/encryption"
+	"github.com/tuneinsight/lattigo/v4/rlwe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -19,6 +21,12 @@ type VoteAggregator struct {
 	aggregates  map[string][]byte
 	encryptFunc func(vote int) []byte
 	controller  pb.ControllerClient
+
+	keyShare    []byte
+	shareIndex  int32
+	totalShares int32
+	publicKey   *rlwe.PublicKey
+
 	pb.UnimplementedWorkerServer
 }
 
@@ -71,6 +79,41 @@ func (va *VoteAggregator) sendPeriodicAggregates() {
 	}
 }
 
+func (va *VoteAggregator) ReceiveKeyShare(ctx context.Context, req *pb.KeyShareRequest) (*pb.KeyShareResponse, error) {
+	va.mu.Lock()
+	defer va.mu.Unlock()
+
+	if req.ShareIndex < 0 || req.ShareIndex >= req.TotalShares {
+		return &pb.KeyShareResponse{Success: false}, nil
+	}
+
+	va.keyShare = req.KeyShare
+	va.shareIndex = req.ShareIndex
+	va.totalShares = req.TotalShares
+
+	if len(req.PublicKey) > 0 {
+		publicKey := &rlwe.PublicKey{}
+		if err := publicKey.UnmarshalBinary(req.PublicKey); err != nil {
+			return &pb.KeyShareResponse{Success: false}, err
+		}
+		va.publicKey = publicKey
+	}
+
+	log.Printf("Received key share %d of %d", va.shareIndex, va.totalShares)
+
+	va.encryptFunc = func(vote int) []byte {
+		if va.publicKey != nil {
+			ciphertext, err := encryption.EncryptVote(va.publicKey, int64(vote))
+			if err != nil {
+				log.Printf("Encryption error: %v", err)
+				return nil
+			}
+			return ciphertext.MarshalBinary()
+		}
+		return []byte{byte(vote)}
+	}
+}
+
 func main() {
 	controllerAddr := os.Getenv("CONTROLLER_ADDRESS")
 	if controllerAddr == "" {
@@ -96,8 +139,17 @@ func main() {
 	voteAggregator := &VoteAggregator{
 		aggregates: make(map[string][]byte),
 		encryptFunc: func(vote int) []byte {
-			// Implement the distributed encryption system
-			return []byte{byte(vote)}
+			cyphertext, err := encryption.EncryptVote(controllerPublicKey, int64(vote))
+			if err != nil {
+				log.Printf("Encryption error: %v", err)
+				return nil
+			}
+			cyphertextBytes, err := cyphertext.MarshalBinary()
+			if err != nil {
+				log.Printf("Marshal error: %v", err)
+				return nil
+			}
+			return cyphertextBytes
 		},
 		controller: controllerClient,
 	}
